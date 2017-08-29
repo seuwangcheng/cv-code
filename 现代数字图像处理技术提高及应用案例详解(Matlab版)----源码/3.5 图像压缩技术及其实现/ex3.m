@@ -1,0 +1,76 @@
+%该程序针对图像近似系数和高频系数进行加密，以达到加密的效果
+clear all; 
+t0 = clock;              %测试程序运行时间
+im=imread('tank.jpg'); 
+im1=rgb2gray(im);       %图像灰度化
+im1=medfilt2(im1,[3 3]);  %图像平滑处理
+figure; 
+imshow(im1); 
+title('灰度化处理'); 
+im1=double(im1); 
+%小波变换，获取图像的低频高频系数
+[ca1,ch1,cv1,cd1]=dwt2(im1,'bior3.7'); 
+figure(3); 
+subplot(231); 
+imshow(ca1,[]); 
+title('图像近似'); 
+subplot(232); 
+imshow(ch1); 
+title('低频水平分量'); 
+subplot(233); 
+imshow(cv1); 
+title('低频垂直分量'); 
+subplot(234); 
+imshow(cd1),; 
+title('高频分量'); 
+%%%%%%以下为混沌加密算法%%%%%% 
+[M,N]=size(ca1); 
+e=hundungen(M,N,0.1); 
+tt=0.1; 
+fca1=mod(tt*ca1+(1-tt)*e,256); 
+subplot(235); 
+imshow(fca1,[]); 
+title('加密'); 
+im2=idwt2(ca1,ch1,cv1,cd1,'bior3.7'); 
+figure(4); 
+imshow(uint8(im2),[]); 
+title('灰度图像小波重构'); 
+im3=idwt2(fca1,ch1,cv1,cd1,'bior3.7'); 
+figure(5); 
+imshow(uint8(im3),[]); 
+title('加密图像小波重构'); 
+%%%%%%以下为混沌解密算法%%%%%% 
+e=hundungen(M,N,0.1); 
+[fca1,ch1,cv1,cd1]=dwt2(im3,'bior3.7'); 
+fca2=(fca1-(1-tt)*e)/tt; 
+im4=idwt2(fca2,ch1,cv1,cd1,'bior3.7'); 
+figure(6); 
+imshow(uint8(im4),[]); 
+title('解密图像小波重构'); 
+%置乱后图像的均值 
+figure(7); 
+subplot(221) 
+imhist(uint8(im1)); 
+title('初始图像的直方图'); 
+subplot(222) 
+imhist(uint8(fca1)); 
+title('ca1系数加密之后的直方图'); 
+subplot(223) 
+imhist(uint8(im3)); 
+title('加密之后的直方图'); 
+subplot(224) 
+imhist(uint8(im4)); 
+title('解密之后的直方图'); 
+ssy=sum(sum(im3)); 
+%置乱后图像的均值
+uy=ssy/(M*N); 
+vy=sum(sum((im3-uy)^2)); 
+ssx=sum(sum(im1)); 
+%原图像的均值
+ux=ssx/(M*N); 
+vx=sum(sum((im1-ux)^2)); 
+Variancey=vy/uy; %置乱后图像的方差
+Variancex=vx/ux; %原图像的方差
+%置乱度
+DDD=Variancey/Variancex; 
+etime(clock,t0)
